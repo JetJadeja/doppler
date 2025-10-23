@@ -7,6 +7,33 @@ pragma solidity ^0.8.24;
  */
 interface ITokenFactory {
     /**
+     * @notice Emitted when a distribution strategy is created for a token
+     * @param token Address of the token being distributed
+     * @param vault Address of the created vault holding the distribution tokens
+     * @param tactics Array of tactic addresses deployed for this distribution
+     * @param amount Amount of tokens allocated to this distribution
+     */
+    event DistributionCreated(address indexed token, address indexed vault, address[] tactics, uint256 amount);
+
+    /**
+     * @notice Configuration for a single distribution strategy
+     * @param amount Tokens allocated to this distribution (in token base units)
+     * @param vaultIndex Index in Seicho VaultRegistry for vault implementation
+     * @param vaultData Encoded vault configuration (should contain placeholder address(0) for token address)
+     * @param tacticIndexes Array of indices in Seicho TacticRegistry (must match allocations/tacticDatas length)
+     * @param allocations Array of allocation weights for tactics (must match tacticIndexes/tacticDatas length)
+     * @param tacticDatas Array of tactic-specific configurations (must match tacticIndexes/allocations length)
+     */
+    struct DistributionData {
+        uint256 amount;
+        uint256 vaultIndex;
+        bytes vaultData;
+        uint256[] tacticIndexes;
+        uint256[] allocations;
+        bytes[] tacticDatas;
+    }
+
+    /**
      * @notice Deploys a new asset token.
      * @param initialSupply Initial supply that will be minted
      * @param recipient Address receiving the initial supply
