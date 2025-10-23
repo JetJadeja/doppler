@@ -150,7 +150,7 @@ abstract contract DeployScript is Script {
         NoOpMigrator noOpMigrator = new NoOpMigrator(address(airlock));
 
         // Token Factory modules
-        tokenFactory = new TokenFactory(address(airlock));
+        tokenFactory = new TokenFactory(address(airlock), address(0), address(0), address(0));
 
         // Governance Factory modules
         governanceFactory = new GovernanceFactory(address(airlock));

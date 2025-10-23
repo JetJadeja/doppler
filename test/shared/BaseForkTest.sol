@@ -116,7 +116,7 @@ abstract contract BaseForkTest is Test {
         require(v2Router != address(0), "V2 Router not available for this chain");
 
         // Deploy TokenFactory
-        tokenFactory = new TokenFactory(address(airlock));
+        tokenFactory = new TokenFactory(address(airlock), address(0), address(0), address(0));
         console.log("TokenFactory deployed at:", address(tokenFactory));
 
         // Deploy UniswapV3Initializer

@@ -39,7 +39,7 @@ abstract contract DeployV3Script is Script {
             new LockableUniswapV3Initializer(address(airlock), IUniswapV3Factory(_scriptData.uniswapV3Factory));
 
         // Token Factory modules
-        TokenFactory tokenFactory = new TokenFactory(address(airlock));
+        TokenFactory tokenFactory = new TokenFactory(address(airlock), address(0), address(0), address(0));
 
         // Governance Factory modules
         GovernanceFactory governanceFactory = new GovernanceFactory(address(airlock));

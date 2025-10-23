@@ -48,7 +48,7 @@ contract V3Test is Test {
             IUniswapV2Router02(UNISWAP_V2_ROUTER_MAINNET),
             address(0xb055)
         );
-        tokenFactory = new TokenFactory(address(airlock));
+        tokenFactory = new TokenFactory(address(airlock), address(0), address(0), address(0));
         governanceFactory = new GovernanceFactory(address(airlock));
 
         address[] memory modules = new address[](4);

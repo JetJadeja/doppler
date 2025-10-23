@@ -89,7 +89,7 @@ contract DopplerFixtures is Deployers {
         airlock = new Airlock(address(this));
         deployer = new DopplerDeployer(manager);
         initializer = new UniswapV4Initializer(address(airlock), manager, deployer);
-        tokenFactory = new TokenFactory(address(airlock));
+        tokenFactory = new TokenFactory(address(airlock), address(0), address(0), address(0));
         governanceFactory = new GovernanceFactory(address(airlock));
         migrator = new UniswapV2Migrator(address(airlock), uniswapV2Factory, uniswapV2Router, address(0xb055));
 

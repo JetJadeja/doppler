@@ -17,7 +17,7 @@ abstract contract DeployTokenFactoryScript is Script {
     function run() public {
         vm.startBroadcast();
         require(block.chainid == _scriptData.chainId, "Invalid chainId");
-        TokenFactory tokenFactory = new TokenFactory(_scriptData.airlock);
+        TokenFactory tokenFactory = new TokenFactory(_scriptData.airlock, address(0), address(0), address(0));
         vm.stopBroadcast();
     }
 }

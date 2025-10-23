@@ -31,7 +31,7 @@ contract BundlerTest is Test {
         vm.createSelectFork(vm.envString("UNICHAIN_MAINNET_RPC_URL"), 10_594_210);
         bundler = new Bundler(Airlock(airlock), UniversalRouter(ur), IQuoterV2(quoterV2));
 
-        tokenFactory = new TokenFactory(airlock);
+        tokenFactory = new TokenFactory(airlock, address(0), address(0), address(0));
         vm.prank(Airlock(airlock).owner());
 
         address[] memory modules = new address[](1);

@@ -56,7 +56,7 @@ contract V4MulticurveInitializer is Deployers {
         vm.label(address(numeraire), "Numeraire");
 
         airlock = new Airlock(airlockOwner);
-        tokenFactory = new TokenFactory(address(airlock));
+        tokenFactory = new TokenFactory(address(airlock), address(0), address(0), address(0));
         governanceFactory = new GovernanceFactory(address(airlock));
         multicurveHook = UniswapV4MulticurveInitializerHook(
             address(

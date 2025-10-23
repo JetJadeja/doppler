@@ -9,7 +9,7 @@ contract TokenFactoryTest is Test {
     TokenFactory public factory;
 
     function setUp() public {
-        factory = new TokenFactory(address(this));
+        factory = new TokenFactory(address(this), address(0), address(0), address(0));
     }
 
     function test_constructor() public view {

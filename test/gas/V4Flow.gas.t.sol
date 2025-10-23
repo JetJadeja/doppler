@@ -73,7 +73,7 @@ contract V4FlowGas is Deployers, DeployPermit2 {
         );
         deployCodeTo("UniswapV4MigratorHook", abi.encode(address(manager), address(migrator)), address(migratorHook));
         locker.approveMigrator(address(migrator));
-        tokenFactory = new TokenFactory(address(airlock));
+        tokenFactory = new TokenFactory(address(airlock), address(0), address(0), address(0));
         governanceFactory = new GovernanceFactory(address(airlock));
 
         address[] memory modules = new address[](4);

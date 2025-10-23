@@ -97,7 +97,7 @@ contract AirlockTest is Test, Deployers {
         deployFreshManager();
 
         airlock = new AirlockCheat(address(this));
-        tokenFactory = new TokenFactory(address(airlock));
+        tokenFactory = new TokenFactory(address(airlock), address(0), address(0), address(0));
         deployer = new DopplerDeployer(manager);
         uniswapV4Initializer = new UniswapV4Initializer(address(airlock), manager, deployer);
         uniswapV3Initializer =
