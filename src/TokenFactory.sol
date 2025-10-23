@@ -60,22 +60,13 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
             DistributionData[] memory distributions
         ) = _decodeParameters(data);
 
-        // Determine token recipient based on distribution presence
-        address tokenRecipient;
-        if (distributions.length > 0) {
-            // TokenFactory receives tokens to distribute them
-            tokenRecipient = address(this);
-        } else {
-            // Pass through to original recipient (Airlock) for backward compatibility
-            tokenRecipient = recipient;
-        }
-
-        return address(
+        // Deploy token with TokenFactory as recipient for predictable CREATE2 addresses
+        address token = address(
             new DERC20{ salt: salt }(
                 name,
                 symbol,
                 initialSupply,
-                tokenRecipient,
+                address(this),
                 owner,
                 yearlyMintCap,
                 vestingDuration,
@@ -84,6 +75,16 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
                 tokenURI
             )
         );
+
+        // If no distributions, transfer all tokens to Airlock immediately
+        if (distributions.length == 0) {
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            if (balance > 0) {
+                IERC20(token).safeTransfer(recipient, balance);
+            }
+        }
+
+        return token;
     }
 
     /**
