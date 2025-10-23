@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import { ITokenFactory } from "src/interfaces/ITokenFactory.sol";
+import { ITokenFactory, DistributionData } from "src/interfaces/ITokenFactory.sol";
 import { DERC20 } from "src/DERC20.sol";
 import { ImmutableAirlock } from "src/base/ImmutableAirlock.sol";
 import { IRegistry, IStrategyMaker, IVault } from "src/interfaces/ISeicho.sol";
@@ -48,29 +48,122 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
         bytes32 salt,
         bytes calldata data
     ) external onlyAirlock returns (address) {
+        // Decode parameters with backward compatibility
         (
             string memory name,
             string memory symbol,
             uint256 yearlyMintCap,
             uint256 vestingDuration,
-            address[] memory recipients,
-            uint256[] memory amounts,
-            string memory tokenURI
-        ) = abi.decode(data, (string, string, uint256, uint256, address[], uint256[], string));
+            address[] memory vestRecipients,
+            uint256[] memory vestAmounts,
+            string memory tokenURI,
+            DistributionData[] memory distributions
+        ) = _decodeParameters(data);
+
+        // Determine token recipient based on distribution presence
+        address tokenRecipient;
+        if (distributions.length > 0) {
+            // TokenFactory receives tokens to distribute them
+            tokenRecipient = address(this);
+        } else {
+            // Pass through to original recipient (Airlock) for backward compatibility
+            tokenRecipient = recipient;
+        }
 
         return address(
             new DERC20{ salt: salt }(
                 name,
                 symbol,
                 initialSupply,
-                recipient,
+                tokenRecipient,
                 owner,
                 yearlyMintCap,
                 vestingDuration,
-                recipients,
-                amounts,
+                vestRecipients,
+                vestAmounts,
                 tokenURI
             )
+        );
+    }
+
+    /**
+     * @notice Decodes token creation parameters with backward compatibility
+     * @param data Encoded token configuration data
+     * @return name Token name
+     * @return symbol Token symbol
+     * @return yearlyMintCap Yearly mint cap rate
+     * @return vestingDuration Duration for vesting schedule
+     * @return vestRecipients Array of vesting recipient addresses
+     * @return vestAmounts Array of vesting amounts corresponding to recipients
+     * @return tokenURI Token metadata URI
+     * @return distributions Array of distribution configurations (empty if not provided)
+     */
+    function _decodeParameters(bytes calldata data)
+        internal
+        view
+        returns (
+            string memory name,
+            string memory symbol,
+            uint256 yearlyMintCap,
+            uint256 vestingDuration,
+            address[] memory vestRecipients,
+            uint256[] memory vestAmounts,
+            string memory tokenURI,
+            DistributionData[] memory distributions
+        )
+    {
+        // Try decoding with 8 parameters (new format with distributions)
+        try this._decode8Params(data) returns (
+            string memory _name,
+            string memory _symbol,
+            uint256 _yearlyMintCap,
+            uint256 _vestingDuration,
+            address[] memory _vestRecipients,
+            uint256[] memory _vestAmounts,
+            string memory _tokenURI,
+            DistributionData[] memory _distributions
+        ) {
+            return (_name, _symbol, _yearlyMintCap, _vestingDuration, _vestRecipients, _vestAmounts, _tokenURI, _distributions);
+        } catch {
+            // Fallback to 7 parameters (legacy format without distributions)
+            (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI) = abi.decode(
+                data,
+                (string, string, uint256, uint256, address[], uint256[], string)
+            );
+            // Return empty distributions array for backward compatibility
+            distributions = new DistributionData[](0);
+        }
+    }
+
+    /**
+     * @notice External wrapper for decoding 8 parameters (used in try-catch)
+     * @param data Encoded token configuration data
+     * @return name Token name
+     * @return symbol Token symbol
+     * @return yearlyMintCap Yearly mint cap rate
+     * @return vestingDuration Duration for vesting schedule
+     * @return vestRecipients Array of vesting recipient addresses
+     * @return vestAmounts Array of vesting amounts corresponding to recipients
+     * @return tokenURI Token metadata URI
+     * @return distributions Array of distribution configurations
+     */
+    function _decode8Params(bytes calldata data)
+        external
+        pure
+        returns (
+            string memory name,
+            string memory symbol,
+            uint256 yearlyMintCap,
+            uint256 vestingDuration,
+            address[] memory vestRecipients,
+            uint256[] memory vestAmounts,
+            string memory tokenURI,
+            DistributionData[] memory distributions
+        )
+    {
+        return abi.decode(
+            data,
+            (string, string, uint256, uint256, address[], uint256[], string, DistributionData[])
         );
     }
 }
