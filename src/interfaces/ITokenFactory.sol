@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
+
 /**
  * @notice Configuration for a single distribution strategy
  * @param amount Tokens allocated to this distribution (in token base units)
@@ -32,6 +34,15 @@ interface ITokenFactory {
      * @param amount Amount of tokens allocated to this distribution
      */
     event DistributionCreated(address indexed token, address indexed vault, address[] tactics, uint256 amount);
+
+    /**
+     * @notice BankMan vault configuration structure
+     * @dev Must exactly match Config struct in BankMan.sol (seicho-core/src/vaults/BankMan.sol:24-26)
+     * @param token The ERC20 token that this vault will distribute
+     */
+    struct BankManConfig {
+        IERC20 token;
+    }
 
     /**
      * @notice Deploys a new asset token.

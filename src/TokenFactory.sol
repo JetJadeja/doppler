@@ -99,7 +99,9 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
      * @return tokenURI Token metadata URI
      * @return distributions Array of distribution configurations (empty if not provided)
      */
-    function _decodeParameters(bytes calldata data)
+    function _decodeParameters(
+        bytes calldata data
+    )
         internal
         view
         returns (
@@ -114,14 +116,12 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
         )
     {
         // Use low-level staticcall to catch panics (panic 0x41 cannot be caught by try-catch)
-        (bool success, bytes memory returnData) = address(this).staticcall(
-            abi.encodeCall(this._decode8Params, (data))
-        );
+        (bool success, bytes memory returnData) = address(this).staticcall(abi.encodeCall(this._decode8Params, (data)));
 
         if (success) {
             // Decode succeeded - extract 8 params from return data
-            (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI, distributions) =
-                abi.decode(returnData, (string, string, uint256, uint256, address[], uint256[], string, DistributionData[]));
+            (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI, distributions) = abi
+                .decode(returnData, (string, string, uint256, uint256, address[], uint256[], string, DistributionData[]));
         } else {
             // Decode failed (panic caught) - use 7-param fallback for backward compatibility
             (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI) =
@@ -142,7 +142,9 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
      * @return tokenURI Token metadata URI
      * @return distributions Array of distribution configurations
      */
-    function _decode8Params(bytes calldata data)
+    function _decode8Params(
+        bytes calldata data
+    )
         external
         pure
         returns (
@@ -156,9 +158,26 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
             DistributionData[] memory distributions
         )
     {
-        return abi.decode(
-            data,
-            (string, string, uint256, uint256, address[], uint256[], string, DistributionData[])
-        );
+        return abi.decode(data, (string, string, uint256, uint256, address[], uint256[], string, DistributionData[]));
+    }
+
+    /**
+     * @notice Injects deployed token address into BankMan vault configuration
+     * @dev CRITICAL: ONLY SUPPORTS BANKMAN VAULT
+     * @param vaultData Encoded BankManConfig (may contain address(0) placeholder)
+     * @param token Deployed token address to inject
+     * @return Modified vaultData with real token address (or unchanged if already set)
+     */
+    function _injectTokenAddress(bytes memory vaultData, address token) internal pure returns (bytes memory) {
+        // Decode vault data as BankManConfig
+        BankManConfig memory config = abi.decode(vaultData, (BankManConfig));
+
+        // Only inject if placeholder address(0) is present
+        if (address(config.token) == address(0)) {
+            config.token = IERC20(token);
+        }
+
+        // Re-encode and return
+        return abi.encode(config);
     }
 }
