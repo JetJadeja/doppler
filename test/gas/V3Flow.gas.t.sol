@@ -94,7 +94,7 @@ contract V3FlowGas is Test {
             name,
             symbol,
             initialSupply,
-            address(airlock),
+            address(tokenFactory),
             address(airlock),
             0,
             0,

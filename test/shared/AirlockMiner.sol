@@ -146,7 +146,7 @@ function mineV4(
                 name,
                 symbol,
                 params.initialSupply,
-                params.airlock,
+                address(params.tokenFactory),
                 params.airlock,
                 yearlyMintCap,
                 vestingDuration,
