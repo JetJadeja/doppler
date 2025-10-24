@@ -113,31 +113,25 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
             DistributionData[] memory distributions
         )
     {
-        // Try decoding with 8 parameters (new format with distributions)
-        try this._decode8Params(data) returns (
-            string memory _name,
-            string memory _symbol,
-            uint256 _yearlyMintCap,
-            uint256 _vestingDuration,
-            address[] memory _vestRecipients,
-            uint256[] memory _vestAmounts,
-            string memory _tokenURI,
-            DistributionData[] memory _distributions
-        ) {
-            return (_name, _symbol, _yearlyMintCap, _vestingDuration, _vestRecipients, _vestAmounts, _tokenURI, _distributions);
-        } catch {
-            // Fallback to 7 parameters (legacy format without distributions)
-            (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI) = abi.decode(
-                data,
-                (string, string, uint256, uint256, address[], uint256[], string)
-            );
-            // Return empty distributions array for backward compatibility
+        // Use low-level staticcall to catch panics (panic 0x41 cannot be caught by try-catch)
+        (bool success, bytes memory returnData) = address(this).staticcall(
+            abi.encodeCall(this._decode8Params, (data))
+        );
+
+        if (success) {
+            // Decode succeeded - extract 8 params from return data
+            (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI, distributions) =
+                abi.decode(returnData, (string, string, uint256, uint256, address[], uint256[], string, DistributionData[]));
+        } else {
+            // Decode failed (panic caught) - use 7-param fallback for backward compatibility
+            (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI) =
+                abi.decode(data, (string, string, uint256, uint256, address[], uint256[], string));
             distributions = new DistributionData[](0);
         }
     }
 
     /**
-     * @notice External wrapper for decoding 8 parameters (used in try-catch)
+     * @notice External wrapper for decoding 8 parameters (used in staticcall)
      * @param data Encoded token configuration data
      * @return name Token name
      * @return symbol Token symbol
