@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import { ITokenFactory, DistributionData } from "src/interfaces/ITokenFactory.sol";
+import { ITokenFactory } from "src/interfaces/ITokenFactory.sol";
 import { DERC20 } from "src/DERC20.sol";
 import { ImmutableAirlock } from "src/base/ImmutableAirlock.sol";
 import { IRegistry, IStrategyMaker, IVault } from "src/interfaces/ISeicho.sol";
@@ -57,7 +57,7 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
             address[] memory vestRecipients,
             uint256[] memory vestAmounts,
             string memory tokenURI,
-            DistributionData[] memory distributions
+            DistributionData memory distribution
         ) = _decodeParameters(data);
 
         // Deploy token with TokenFactory as recipient for predictable CREATE2 addresses
@@ -76,11 +76,36 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
             )
         );
 
-        // If no distributions, transfer all tokens to Airlock immediately
-        if (distributions.length == 0) {
+        // If no distribution, transfer all tokens to Airlock immediately
+        if (distribution.amount == 0) {
             uint256 balance = IERC20(token).balanceOf(address(this));
             if (balance > 0) {
                 IERC20(token).safeTransfer(recipient, balance);
+            }
+        } else {
+            // Process single distribution
+            // Inject deployed token address into vault configuration
+            bytes memory vaultData = _injectTokenAddress(distribution.vaultData, token);
+
+            // Deploy vault and tactics via StrategyMaker
+            (address vault, address[] memory tactics) = strategyMaker.createStrategy(
+                distribution.vaultIndex,
+                vaultData,
+                distribution.tacticIndexes,
+                distribution.allocations,
+                distribution.tacticDatas
+            );
+
+            // Transfer tokens to vault
+            IERC20(token).safeTransfer(vault, distribution.amount);
+
+            // Emit distribution event
+            emit DistributionCreated(token, vault, tactics, distribution.amount);
+
+            // Transfer remaining tokens to Airlock
+            uint256 remainingBalance = IERC20(token).balanceOf(address(this));
+            if (remainingBalance > 0) {
+                IERC20(token).safeTransfer(recipient, remainingBalance);
             }
         }
 
@@ -97,7 +122,7 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
      * @return vestRecipients Array of vesting recipient addresses
      * @return vestAmounts Array of vesting amounts corresponding to recipients
      * @return tokenURI Token metadata URI
-     * @return distributions Array of distribution configurations (empty if not provided)
+     * @return distribution Distribution configuration (amount=0 if not provided)
      */
     function _decodeParameters(
         bytes calldata data
@@ -112,7 +137,7 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
             address[] memory vestRecipients,
             uint256[] memory vestAmounts,
             string memory tokenURI,
-            DistributionData[] memory distributions
+            DistributionData memory distribution
         )
     {
         // Use low-level staticcall to catch panics (panic 0x41 cannot be caught by try-catch)
@@ -120,13 +145,21 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
 
         if (success) {
             // Decode succeeded - extract 8 params from return data
-            (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI, distributions) = abi
-                .decode(returnData, (string, string, uint256, uint256, address[], uint256[], string, DistributionData[]));
+            (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI, distribution) = abi
+                .decode(returnData, (string, string, uint256, uint256, address[], uint256[], string, DistributionData));
         } else {
             // Decode failed (panic caught) - use 7-param fallback for backward compatibility
             (name, symbol, yearlyMintCap, vestingDuration, vestRecipients, vestAmounts, tokenURI) =
                 abi.decode(data, (string, string, uint256, uint256, address[], uint256[], string));
-            distributions = new DistributionData[](0);
+            // Return empty distribution (amount = 0 indicates no distribution)
+            distribution = DistributionData({
+                amount: 0,
+                vaultIndex: 0,
+                vaultData: "",
+                tacticIndexes: new uint256[](0),
+                allocations: new uint256[](0),
+                tacticDatas: new bytes[](0)
+            });
         }
     }
 
@@ -140,7 +173,7 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
      * @return vestRecipients Array of vesting recipient addresses
      * @return vestAmounts Array of vesting amounts corresponding to recipients
      * @return tokenURI Token metadata URI
-     * @return distributions Array of distribution configurations
+     * @return distribution Distribution configuration
      */
     function _decode8Params(
         bytes calldata data
@@ -155,10 +188,10 @@ contract TokenFactory is ITokenFactory, ImmutableAirlock {
             address[] memory vestRecipients,
             uint256[] memory vestAmounts,
             string memory tokenURI,
-            DistributionData[] memory distributions
+            DistributionData memory distribution
         )
     {
-        return abi.decode(data, (string, string, uint256, uint256, address[], uint256[], string, DistributionData[]));
+        return abi.decode(data, (string, string, uint256, uint256, address[], uint256[], string, DistributionData));
     }
 
     /**

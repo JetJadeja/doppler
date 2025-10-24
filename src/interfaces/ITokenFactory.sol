@@ -4,24 +4,6 @@ pragma solidity ^0.8.24;
 import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 
 /**
- * @notice Configuration for a single distribution strategy
- * @param amount Tokens allocated to this distribution (in token base units)
- * @param vaultIndex Index in Seicho VaultRegistry for vault implementation
- * @param vaultData Encoded vault configuration (should contain placeholder address(0) for token address)
- * @param tacticIndexes Array of indices in Seicho TacticRegistry (must match allocations/tacticDatas length)
- * @param allocations Array of allocation weights for tactics (must match tacticIndexes/tacticDatas length)
- * @param tacticDatas Array of tactic-specific configurations (must match tacticIndexes/allocations length)
- */
-struct DistributionData {
-    uint256 amount;
-    uint256 vaultIndex;
-    bytes vaultData;
-    uint256[] tacticIndexes;
-    uint256[] allocations;
-    bytes[] tacticDatas;
-}
-
-/**
  * @title Token Factory Interface
  * @notice Contracts deploying new asset token must implement this interface.
  */
@@ -42,6 +24,24 @@ interface ITokenFactory {
      */
     struct BankManConfig {
         IERC20 token;
+    }
+
+    /**
+     * @notice Configuration for a single distribution strategy
+     * @param amount Tokens allocated to this distribution (in token base units)
+     * @param vaultIndex Index in Seicho VaultRegistry for vault implementation
+     * @param vaultData Encoded vault configuration (should contain placeholder address(0) for token address)
+     * @param tacticIndexes Array of indices in Seicho TacticRegistry (must match allocations/tacticDatas length)
+     * @param allocations Array of allocation weights for tactics (must match tacticIndexes/tacticDatas length)
+     * @param tacticDatas Array of tactic-specific configurations (must match tacticIndexes/allocations length)
+     */
+    struct DistributionData {
+        uint256 amount;
+        uint256 vaultIndex;
+        bytes vaultData;
+        uint256[] tacticIndexes;
+        uint256[] allocations;
+        bytes[] tacticDatas;
     }
 
     /**
